@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "result": {
+    "message_id": 98,
+    "from": { "id": 6803966935, "is_bot": true, "first_name": "DailyBoyBot", "username": "MontanaBoyPlanBot" },
+    "chat": { "id": 1013469903, "first_name": "Boy", "username": "boybrahmanda", "type": "private" },
+    "date": 1711544789,
+    "reply_to_message": {
+      "message_id": 97,
+      "from": { "id": 1013469903, "is_bot": false, "first_name": "Boy", "username": "boybrahmanda", "language_code": "id" },
+      "chat": { "id": 1013469903, "first_name": "Boy", "username": "boybrahmanda", "type": "private" },
+      "date": 1711544788,
+      "text": "halo"
+    },
+    "text": "Hello selamat datang di bot pertama saya"
+  }
+}

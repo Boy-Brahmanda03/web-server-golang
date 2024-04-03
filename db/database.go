@@ -34,8 +34,8 @@ func DatabaseConnection(){
 	 fmt.Println("Connected!")
 }
 
-func AddInbox(uname string, text string)(int64, error){
-	result, err := db.Exec("INSERT INTO inbox (user, message, tanggal) VALUES (?, ?, ?)", uname, text, time.Now())
+func AddInbox(id_pesan int, id_user int, uname string, text string)(int64, error){
+	result, err := db.Exec("INSERT INTO inbox (id_pesan, id_user, username, message, tanggal) VALUES (?, ?, ?, ?, ?)", id_pesan, id_user, uname, text, time.Now())
     if err != nil {
         return 0, fmt.Errorf("addInbox: %v", err)
     }
@@ -43,12 +43,11 @@ func AddInbox(uname string, text string)(int64, error){
     if err != nil {
         return 0, fmt.Errorf("addInbox: %v", err)
     }
-	fmt.Println("id: ", id, uname, text)
     return id, nil
 }
 
-func AddOutbox(uname string, text string)(int64, error){
-	result, err := db.Exec("INSERT INTO outbox (user, message, tanggal) VALUES (?, ?, ?)", uname, text, time.Now())
+func AddOutbox(id_pesan int,id_user int, uname string, text string)(int64, error){
+	result, err := db.Exec("INSERT INTO outbox (id_pesan, id_user, username, message, tanggal) VALUES (?, ?, ?, ?, ?)", id_pesan, id_user, uname, text, time.Now())
     if err != nil {
         return 0, fmt.Errorf("addOutbox: %v", err)
     }
@@ -56,21 +55,69 @@ func AddOutbox(uname string, text string)(int64, error){
     if err != nil {
         return 0, fmt.Errorf("addOutbox: %v", err)
     }
-	fmt.Println("id: ", id, uname, text)
     return id, nil
 }
 
 
-func ShowMenu()(int64, error){
-	result, err := db.Exec("Select no,label,deskripsi from tb_menu")
+type Menu struct {
+	No int64
+	Label string
+	Deskripsi string
+}
+
+func ShowMenu()([]Menu, error){
+	rows, err := db.Query("Select no,label,deskripsi from tb_menu")
 	if err != nil {
-        return 0, fmt.Errorf("showMenu: %v", err)
+        return nil, err
     }
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("showMenu: %v", err)
+    defer rows.Close()
+
+	var menu []Menu
+
+	for rows.Next(){
+		var each = Menu{}
+		var err = rows.Scan(&each.No, &each.Label, &each.Deskripsi)
+
+		if err != nil {
+			fmt.Println(err.Error())
+            return nil, err
+        }
+
+		menu = append(menu, each)
 	}
 
-	fmt.Println(id)
-	return id, nil
+	if err = rows.Err(); err != nil {
+        fmt.Println(err.Error())
+        return nil, err
+    }
+
+	return menu, nil
 }
+
+type Mahasiswa struct {
+	ID int64
+	NIM string
+	Nama string
+}
+
+func CariMahasiswa(nim string)([]Mahasiswa, error) {
+	rows, err := db.Query("Select * from tb_mhs where nim = ?", nim)
+	if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+	var mahasiswa []Mahasiswa
+
+	for rows.Next() {
+		var mhs Mahasiswa
+		err := rows.Scan(&mhs.ID, &mhs.NIM, &mhs.Nama); 
+		if err != nil {
+            fmt.Println(err.Error())
+            return nil, err
+        }
+
+        mahasiswa = append(mahasiswa, mhs)
+	}
+	return mahasiswa, err
+} 

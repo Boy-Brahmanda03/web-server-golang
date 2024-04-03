@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "result": [
+    {
+      "update_id": 956152065,
+      "message": {
+        "message_id": 97,
+        "from": { "id": 1013469903, "is_bot": false, "first_name": "Boy", "username": "boybrahmanda", "language_code": "id" },
+        "chat": { "id": 1013469903, "first_name": "Boy", "username": "boybrahmanda", "type": "private" },
+        "date": 1711544788,
+        "text": "halo"
+      }
+    }
+  ]
+}
