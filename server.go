@@ -10,19 +10,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-//pilihan menu, namun belum digunakan
-var menuOption = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Cari Mahasiswa", ""),
-    ),
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Cari Dosen", "2"),
-    ),
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Cari Mata Kuliah", "3"),
-    ),
-)
-
 
 func main() {
 	//bot token
@@ -38,7 +25,7 @@ func main() {
 	db.DatabaseConnection()
 
 	//untuk debug respon bot
-	// bot.Debug = true
+	bot.Debug = true
 
 	//melihat bot yang terhubung
 	log.Printf("Authorized on account %s", bot.Self.UserName)
@@ -60,11 +47,13 @@ func main() {
 
 	//function yang disediakan library untuk menerima masukan update pada webhook yang dibuat
 	updates := bot.ListenForWebhook("/webhook")
+
+	//loop untuk menerima update dari req webhook
 	for update := range updates {
 		// Create a new MessageConfig. We don't have text yet,
         // so we leave it empty.
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-
+		msg.ReplyToMessageID = update.Message.MessageID
 
 		if update.Message == nil {
 			continue
@@ -72,35 +61,82 @@ func main() {
 
 		db.AddInbox(update.Message.MessageID, int(update.Message.Chat.ID), update.Message.Chat.UserName, update.Message.Text)
 
-		if !update.Message.IsCommand() {
-            msg.Text = "Pesan tidak dapat dimengerti"
-			bot.Send(msg)
-			addMessageToOutbox(update, msg.Text)
-			continue
-        }
-    	
-        // Extract the command from the Message.
-        switch update.Message.Command() {
-		case "start":
-			msg.Text = "Selamat datang di DailyBoyBot, ketik /help untuk melihat menu yang tersedia!"
-        case "help":
-            msg.Text = "I understand /sayhi and /status."
-        case "sayhi":
-            msg.Text = "Hi :)"
-        case "status":
-            msg.Text = "I'm ok."
-		case "menu":
-			msg.Text = menu()
-			bot.Send(msg)
-			switch update.Message.CommandArguments() {
-			case "cari_mhs":
-				msg.Text = "Masukan NIM: "
+		currentState := db.GetStateMessage(update.Message.Chat.ID)
+		switch currentState {
+			//state awal ketika user baru masuk bot
+			case 0: 
+				// Extract the command from the Message.
+				switch update.Message.Command() {
+					case "start":
+						msg.Text = "Selamat datang di DailyBoyBot, ketik /help untuk melihat menu yang tersedia!"
+						bot.Send(msg)
+					case "help":
+						msg.Text = "I understand /menu"
+						bot.Send(msg)
+					case "menu":
+						msg.Text = menu()
+						db.UpdateState(update.Message.Chat.ID, 1)
+						bot.Send(msg)
+					default:
+						msg.Text = "I don't know that command"
+						bot.Send(msg)
+				}
+			// state ketika user telah memilih menu
+			case 1:
+				switch update.Message.Text {
+					case "1":
+						msg.Text = "Masukan NIM : "
+						db.UpdateState(update.Message.Chat.ID, 2)
+						db.UpdateStateMenu(update.Message.Chat.ID, 1)
+						bot.Send(msg)
+					case "2":
+						msg.Text = "Masukan Nama Dosen : "
+						db.UpdateState(update.Message.Chat.ID, 2)
+						db.UpdateStateMenu(update.Message.Chat.ID, 2)
+						bot.Send(msg)
+					case "3":
+						msg.Text = "Masukan Nama Dosen : "
+						db.UpdateState(update.Message.Chat.ID, 2)
+						db.UpdateStateMenu(update.Message.Chat.ID, 3)
+						bot.Send(msg)
+					default:
+						msg.Text = "Pilihan Menu Tidak Tersedia!"
+						bot.Send(msg)
+				}
+			//state memproses permintaan menu user
+			case 2: 
+				stateMenu := db.GetStateMenu(update.Message.Chat.ID)
+				switch stateMenu {
+				case 1:
+					nim := update.Message.Text
+					res, err := db.CariMahasiswa(nim)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					var mahasiswa []string
+				
+					for _, item := range res {
+						mhsStrings :=  fmt.Sprintf("Mahasiswa Ditemukan!\nNIM : %s\nNama : %s\n", item.NIM, item.Nama)
+						mahasiswa = append(mahasiswa, mhsStrings)
+					}
+
+					result := strings.Join(mahasiswa, "\n")
+					msg.Text = result
+					db.UpdateState(update.Message.Chat.ID, 0)
+					bot.Send(msg)	
+				case 2:
+					msg.Text = "KEtemu dosen"
+					db.UpdateState(update.Message.Chat.ID, 0)
+					bot.Send(msg)
+				}
+				
+			default:
+				msg.Text = "Pilihan belum tersedia!"
+				db.UpdateState(update.Message.Chat.ID, 0)
 				bot.Send(msg)
-			}
-        default:
-            msg.Text = "I don't know that command"
-			bot.Send(msg)
-        }
+
+		}
 		
 		addMessageToOutbox(update, msg.Text)
 	}

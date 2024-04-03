@@ -95,16 +95,33 @@ func ShowMenu()([]Menu, error){
 }
 
 
-func GetStateMessage(idMsg int) int{
+func GetStateMessage(id_user int64) int{
 	var state int
-	rows := db.QueryRow("select state from inbox where id_pesan = ?", idMsg)
+	rows := db.QueryRow("select state from inbox where id_user = ?", id_user)
 	rows.Scan(&state)
 	return state
 }
 
-func UpdateState(idMsg int, state int) error {
-	nState :=  state + 1
-	_, err := db.Exec("Update inbox set state = ? where id_pesan = ?", nState, idMsg)
+func UpdateState(idUser int64, state int) error {
+	nState :=  state
+	_, err := db.Exec("Update inbox set state = ? where id_user = ?", nState, idUser)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func GetStateMenu(id_user int64) int{
+	var state int
+	rows := db.QueryRow("select state_menu from inbox where id_user = ?", id_user)
+	rows.Scan(&state)
+	return state
+}
+
+func UpdateStateMenu(idUser int64, state int) error {
+	nState :=  state
+	_, err := db.Exec("Update inbox set state_menu = ? where id_user = ?", nState, idUser)
 	if err != nil {
 		log.Fatal(err)
 	}
