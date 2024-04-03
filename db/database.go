@@ -94,6 +94,24 @@ func ShowMenu()([]Menu, error){
 	return menu, nil
 }
 
+
+func GetStateMessage(idMsg int) int{
+	var state int
+	rows := db.QueryRow("select state from inbox where id_pesan = ?", idMsg)
+	rows.Scan(&state)
+	return state
+}
+
+func UpdateState(idMsg int, state int) error {
+	nState :=  state + 1
+	_, err := db.Exec("Update inbox set state = ? where id_pesan = ?", nState, idMsg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
 type Mahasiswa struct {
 	ID int64
 	NIM string
