@@ -135,6 +135,14 @@ type Mahasiswa struct {
 	Nama string
 }
 
+type Dosen struct {
+	ID int64
+	NIP string
+	NIDN string
+	Nama string
+	Email string
+}
+
 func CariMahasiswa(nim string)([]Mahasiswa, error) {
 	rows, err := db.Query("Select * from tb_mhs where nim = ?", nim)
 	if err != nil {
@@ -156,3 +164,25 @@ func CariMahasiswa(nim string)([]Mahasiswa, error) {
 	}
 	return mahasiswa, err
 } 
+
+func CariDosen(nama string)([]Dosen, error){
+	 // Query dari field dalam database
+	 rows, err := db.Query("Select * from tb_dosen where nama_dosen like ?", "%" + nama + "%")
+	 if err != nil {
+		 log.Fatal(err)
+	 }
+	 defer rows.Close()
+
+	var dosen []Dosen
+	for rows.Next() {
+		var dsn Dosen
+		err := rows.Scan(&dsn.ID, &dsn.NIP, &dsn.NIDN, &dsn.Nama, &dsn.Email)
+		if err != nil {
+			fmt.Println(err.Error())
+            return nil, err
+		}
+
+		dosen = append(dosen, dsn)
+	}
+	return dosen, nil
+}

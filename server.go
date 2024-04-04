@@ -61,11 +61,12 @@ func main() {
 
 		db.AddInbox(update.Message.MessageID, int(update.Message.Chat.ID), update.Message.Chat.UserName, update.Message.Text)
 
+		//mengambil proses state dari database
 		currentState := db.GetStateMessage(update.Message.Chat.ID)
 		switch currentState {
 			//state awal ketika user baru masuk bot
 			case 0: 
-				// Extract the command from the Message.
+				// proses state awal
 				switch update.Message.Command() {
 					case "start":
 						msg.Text = "Selamat datang di DailyBoyBot, ketik /help untuk melihat menu yang tersedia!"
@@ -78,15 +79,17 @@ func main() {
 						db.UpdateState(update.Message.Chat.ID, 1)
 						bot.Send(msg)
 					default:
-						msg.Text = "I don't know that command"
+						msg.Text = "Perintah tidak tersedia, silahkan gunakan /help untuk melihat menu yang tersedia!"
 						bot.Send(msg)
 				}
 			// state ketika user telah memilih menu
 			case 1:
+				// proses memilih menu
 				switch update.Message.Text {
 					case "1":
 						msg.Text = "Masukan NIM : "
 						db.UpdateState(update.Message.Chat.ID, 2)
+						//mengubah state pilihan menu
 						db.UpdateStateMenu(update.Message.Chat.ID, 1)
 						bot.Send(msg)
 					case "2":
@@ -95,7 +98,7 @@ func main() {
 						db.UpdateStateMenu(update.Message.Chat.ID, 2)
 						bot.Send(msg)
 					case "3":
-						msg.Text = "Masukan Nama Dosen : "
+						msg.Text = "Masukan Nama Matkul : "
 						db.UpdateState(update.Message.Chat.ID, 2)
 						db.UpdateStateMenu(update.Message.Chat.ID, 3)
 						bot.Send(msg)
@@ -126,7 +129,32 @@ func main() {
 					db.UpdateState(update.Message.Chat.ID, 0)
 					bot.Send(msg)	
 				case 2:
-					msg.Text = "KEtemu dosen"
+					namaDsn := update.Message.Text
+					res, err := db.CariDosen(namaDsn)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					var dosen []string
+					dosen = append(dosen, "Dosen Ditemukan!")
+					for _, item := range res {
+						dsnStrings :=  fmt.Sprintf("\nNIP : %s\nNIDN : %s\nNama : %s\nEmail : %s", item.NIP, item.NIDN, item.Nama, item.Email)
+						dosen = append(dosen, dsnStrings)
+					}
+					
+					result := strings.Join(dosen, "\n")
+					fmt.Println("Result :", result)
+					if result == "" {
+						msg.Text = "Data Dosen Tidak Ditemukan"
+						bot.Send(msg)
+						db.UpdateState(update.Message.Chat.ID, 0)
+						continue
+					}
+					msg.Text = result
+					db.UpdateState(update.Message.Chat.ID, 0)
+					bot.Send(msg)
+				case 3: 
+					msg.Text = "Ketemu Matkul"
 					db.UpdateState(update.Message.Chat.ID, 0)
 					bot.Send(msg)
 				}
