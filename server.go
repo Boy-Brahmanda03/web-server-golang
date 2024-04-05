@@ -40,10 +40,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error setting webhook: %v", err)
 	}
+
+	//handler untuk menerima respon webhook dari API Telegram
+	// http.HandleFunc("/webhook", http.HandlerFunc)
 	
 	//menjalankan webserver dengan goroutine (coroutine dalam go) sehingga kode dapat berjalan secara paralel
 	go http.ListenAndServe(":8443", nil)
 	log.Println("Bot is running and listening for updates...")
+
 
 	//function yang disediakan library untuk menerima masukan update pada webhook yang dibuat
 	updates := bot.ListenForWebhook("/webhook")
@@ -158,15 +162,13 @@ func main() {
 					db.UpdateState(update.Message.Chat.ID, 0)
 					bot.Send(msg)
 				}
-				
-			default:
-				msg.Text = "Pilihan belum tersedia!"
-				db.UpdateState(update.Message.Chat.ID, 0)
-				bot.Send(msg)
-
 		}
 		
-		addMessageToOutbox(update, msg.Text)
+		_, err := db.AddOutbox(update.Message.MessageID, int(update.Message.Chat.ID), update.Message.Chat.UserName, msg.Text)
+
+		if err != nil {
+			log.Fatalf("Error In Add Message To Outbox %s", err.Error())
+		}
 	}
 }
 
@@ -183,13 +185,4 @@ func menu() string{
 	resultMenu := strings.Join(menuStrings, "\n")
 
 	return resultMenu
-}
-
-//fungsi untuk memasukan pesan outbox ke database
-func addMessageToOutbox(update tgbotapi.Update, msg string){
-	_, err := db.AddOutbox(update.Message.MessageID, int(update.Message.Chat.ID), update.Message.Chat.UserName, msg)
-
-	if err != nil {
-		log.Fatalf("Error In Add Message To Outbox %s", err.Error())
-	}
 }
